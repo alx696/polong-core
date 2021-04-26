@@ -14,11 +14,3 @@
 ```
 $ gomobile bind -target=android/arm64,android/arm -v -o /path/to/android/project/gomobile/gomobile.aar ./kc ./qc
 ```
-
-### Web
-
-[破笼 Web](https://github.com/alx696/polong-web)，提供浏览器和桌面端的界面。
-
-### 桌面端
-
-[破笼 桌面端](https://github.com/alx696/polong-desktop)，使用[electron](https://www.electronjs.org/)和[electron-builder](https://www.electron.build/)打包集成后端和界面，提供破笼Linux(DEB,RPM)，Windows客户端。
