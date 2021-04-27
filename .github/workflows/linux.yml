@@ -23,11 +23,10 @@ jobs:
         go mod download
         go build -o polong
 
-    - name: Publish
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        source: "polong"
-        target: "~/docker/web/polong/"
+    - shell: bash
+      env:
+        KEY: ${{ secrets.KEY }}
+        PATH: ${{ secrets.PATH }}
+      run: |
+        echo "$KEY" | tee ~/.ssh/id_rsa
+        scp polong $PATH
