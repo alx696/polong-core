@@ -7,6 +7,8 @@ on:
 jobs:
 
   build:
+    env:
+      NAME: polong-core-linux
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,7 +21,7 @@ jobs:
     - name: Build
       run: |
         go mod download
-        go build -o polong-linux
+        go build -o $NAME
 
     - name: Publish
       env:
@@ -34,4 +36,4 @@ jobs:
         echo "Host *
           StrictHostKeyChecking no
           UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
-        scp polong-linux $SCP_PATH
+        scp $NAME $SCP_PATH
