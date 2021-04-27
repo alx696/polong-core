@@ -21,13 +21,17 @@ jobs:
     - name: Build
       run: |
         go mod download
-        go build -o polong
+        go build -o polong-linux
 
     - name: Publish
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        source: "polong"
-        target: "~/docker/web/polong/"
+      env:
+        SCP_PK: ${{ secrets.SCP_PK }}
+        SCP_PATH: ${{ secrets.SCP_PATH }}
+      run: |
+        mkdir -p $HOME/.ssh
+        echo "$SCP_KEY" | tee $HOME/.ssh/id_ed25519
+        chmod 400 $HOME/.ssh/id_ed25519
+        echo "Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
+        scp polong-linux $SCP_PATH
