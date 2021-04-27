@@ -8,9 +8,7 @@
 
 ### Android
 
-[破笼 Android](https://github.com/alx696/polong-android)，使用[mobile](https://pkg.go.dev/golang.org/x/mobile)生成AAR，提供破笼Android端。
-
-项目文件夹中执行下面命令生成AAR:
+使用[mobile](https://pkg.go.dev/golang.org/x/mobile)生成AAR，项目文件夹中执行:
 ```
 $ gomobile bind -target=android/arm64,android/arm -v -o /path/to/android/project/gomobile/gomobile.aar ./kc ./qc
 ```
