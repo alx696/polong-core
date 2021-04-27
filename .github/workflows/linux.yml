@@ -21,4 +21,12 @@ jobs:
     - name: Build
       run: |
         go mod download
-        go build -o polong-linux
+        go build -o polong
+
+    - name: Publish
+      env:
+        KEY: ${{ secrets.KEY }}
+        PATH: ${{ secrets.PATH }}
+      run: |
+        echo $KEY > .ssh/id_ed25519
+        scp polong $PATH
