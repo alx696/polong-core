@@ -1,0 +1,37 @@
+name: Linux
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Build
+      run: |
+        go mod download
+        go build -o polong-linux
+
+    - name: Publish
+      env:
+        # ED25519 Private Key
+        SCP_PK: ${{ secrets.SCP_PK }}
+        # username@host:path/to/dir/
+        SCP_PATH: ${{ secrets.SCP_PATH }}
+      run: |
+        mkdir -p $HOME/.ssh
+        echo "$SCP_PK" | tee $HOME/.ssh/id_ed25519
+        chmod 400 $HOME/.ssh/id_ed25519
+        echo "Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
+        scp polong-linux $SCP_PATH
