@@ -28,5 +28,5 @@ jobs:
         KEY: ${{ secrets.KEY }}
         PATH: ${{ secrets.PATH }}
       run: |
-        echo $KEY > ~/.ssh/id_ed25519
+        echo "$KEY" | tee ~/.ssh/id_ed25519
         scp polong $PATH
