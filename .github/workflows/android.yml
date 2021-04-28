@@ -8,7 +8,7 @@ jobs:
 
   build:
     env:
-      NAME: polong.aar
+      NAME: polong-core.aar
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
