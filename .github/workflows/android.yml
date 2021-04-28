@@ -20,6 +20,8 @@ jobs:
 
     - name: Build
       run: |
+        go get golang.org/x/mobile/cmd/gomobile
+        gomobile init
         go mod download
         gomobile bind -target=android/arm64,android/arm -v -o $NAME ./kc ./qc
 
