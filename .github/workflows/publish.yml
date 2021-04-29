@@ -19,17 +19,6 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/go
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
     - name: Build
       run: |
         go mod download
@@ -42,26 +31,12 @@ jobs:
         echo "Android"
         go get golang.org/x/mobile/cmd/gomobile
         gomobile init
-        gomobile bind -target=android/arm64,android/arm -v -o "build/${NAME}.aar" ./kc ./qc
+        gomobile bind -target=android/arm64,android/arm -o "build/${NAME}.aar" ./kc ./qc
+        rm "build/${NAME}-sources.jar"
 
-    - name: Uploading release assets
+    - name: Create release and upload assets
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
         files: 'build/*'
-
-    - name: Publish
-      env:
-        # ED25519 Private Key
-        SCP_PK: ${{ secrets.SCP_PK }}
-        # username@host:path/to/dir/
-        SCP_PATH: ${{ secrets.SCP_PATH }}
-      run: |
-        mkdir -p $HOME/.ssh
-        echo "$SCP_PK" | tee $HOME/.ssh/id_ed25519
-        chmod 400 $HOME/.ssh/id_ed25519
-        echo "Host *
-          StrictHostKeyChecking no
-          UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
-        scp build/* $SCP_PATH
