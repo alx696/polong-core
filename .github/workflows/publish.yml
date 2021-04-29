@@ -39,7 +39,10 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: "$NAME"
+        files: |
+          "$NAME-linux"
+          "$NAME-windows"
+          "$NAME.aar"
 
     - name: Publish
       env:
