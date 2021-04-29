@@ -19,18 +19,30 @@ jobs:
       with:
         go-version: 1.16
 
+    - name: Cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/go
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
     - name: Build
       run: |
         go mod download
+        mkdir build
         echo "Linux"
-        go build -o "$NAME-linux"
+        go build -o "build/${NAME}-linux"
         echo "Windows"
         sudo apt install -y gcc-multilib gcc-mingw-w64
-        GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ go build -o "$NAME-windows"
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ go build -o "build/${NAME}-windows"
         echo "Android"
         go get golang.org/x/mobile/cmd/gomobile
         gomobile init
-        gomobile bind -target=android/arm64,android/arm -v -o "$NAME-android.aar" ./kc ./qc
+        gomobile bind -target=android/arm64,android/arm -v -o "build/${NAME}.aar" ./kc ./qc
 
     - name: Uploading release assets
       uses: softprops/action-gh-release@v1
@@ -38,9 +50,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
         files: |
-          "$NAME-linux"
-          "$NAME-windows"
-          "$NAME-android.aar"
+          "build/${{ env.NAME }}-linux"
+          "build/${{ env.NAME }}-windows"
+          "build/${{ env.NAME }}.aar"
 
     - name: Publish
       env:
@@ -55,4 +67,4 @@ jobs:
         echo "Host *
           StrictHostKeyChecking no
           UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
-        scp "$NAME-*" $SCP_PATH
+        scp build/* $SCP_PATH
