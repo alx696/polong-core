@@ -1,14 +1,16 @@
-name: Android
+name: Publish
 
 on:
-  release:
-    types: [published]
+  # release:
+  #   types: [published]
+  push:
+  branches: [ main ]
 
 jobs:
 
   build:
     env:
-      NAME: polong-core.aar
+      NAME: polong-core
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -20,10 +22,24 @@ jobs:
 
     - name: Build
       run: |
+        go mod download
+        echo "Linux"
+        go build -o $NAME-linux
+        echo "Windows"
+        sudo apt install -y gcc-multilib gcc-mingw-w64
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ go build -o $NAME-windows
+        echo "Android"
         go get golang.org/x/mobile/cmd/gomobile
         gomobile init
-        go mod download
-        gomobile bind -target=android/arm64,android/arm -v -o $NAME ./kc ./qc
+        gomobile bind -target=android/arm64,android/arm -v -o $NAME.aar ./kc ./qc
+
+    - name: Uploading release assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: "$NAME"
 
     - name: Publish
       env:
