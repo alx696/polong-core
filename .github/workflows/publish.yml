@@ -31,18 +31,18 @@ jobs:
         echo "Android"
         go get golang.org/x/mobile/cmd/gomobile
         gomobile init
-        gomobile bind -target=android/arm64,android/arm -v -o $NAME.aar ./kc ./qc
+        gomobile bind -target=android/arm64,android/arm -v -o $NAME-android.aar ./kc ./qc
 
     - name: Uploading release assets
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
         files: |
           "$NAME-linux"
           "$NAME-windows"
-          "$NAME.aar"
+          "$NAME-android.aar"
 
     - name: Publish
       env:
@@ -57,4 +57,4 @@ jobs:
         echo "Host *
           StrictHostKeyChecking no
           UserKnownHostsFile=/dev/null" | tee $HOME/.ssh/config
-        scp $NAME $SCP_PATH
+        scp "$NAME-*" $SCP_PATH
