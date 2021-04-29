@@ -49,10 +49,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
-        files: |
-          "build/${{ env.NAME }}-linux"
-          "build/${{ env.NAME }}-windows"
-          "build/${{ env.NAME }}.aar"
+        files: 'build/*'
 
     - name: Publish
       env:
