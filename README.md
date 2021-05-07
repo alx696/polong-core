@@ -10,5 +10,5 @@
 
 使用[mobile](https://pkg.go.dev/golang.org/x/mobile)生成AAR，项目文件夹中执行:
 ```
-$ gomobile bind -target=android/arm64,android/arm -v -o /path/to/android/project/gomobile/gomobile.aar ./kc ./qc
+$ gomobile bind -target=android/arm64,android/arm -v -o /path/to/android/project/gomobile/polong-core.aar ./kc ./qc
 ```

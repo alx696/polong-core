@@ -1,6 +1,7 @@
 module github.com/alx696/go-kc
 
 go 1.16
+
 require (
 	github.com/alx696/go-tool v0.0.0-20210121043806-bed88e5f4ee9
 	github.com/gorilla/websocket v1.4.2
