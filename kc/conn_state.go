@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	kcconnstate "github.com/alx696/go-kc/kc/connstate"
-	kccontact "github.com/alx696/go-kc/kc/contact"
+	kcconnstate "github.com/alx696/polong-core/kc/connstate"
+	kccontact "github.com/alx696/polong-core/kc/contact"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 

@@ -1,9 +1,10 @@
-module github.com/alx696/go-kc
+module github.com/alx696/polong-core
 
 go 1.16
 
 require (
 	github.com/alx696/go-tool v0.0.0-20210121043806-bed88e5f4ee9
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-autonat v0.4.0

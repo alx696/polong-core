@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	kcconnstate "github.com/alx696/go-kc/kc/connstate"
-	kccontact "github.com/alx696/go-kc/kc/contact"
-	kcdb "github.com/alx696/go-kc/kc/db"
-	kcoption "github.com/alx696/go-kc/kc/option"
+	kcconnstate "github.com/alx696/polong-core/kc/connstate"
+	kccontact "github.com/alx696/polong-core/kc/contact"
+	kcdb "github.com/alx696/polong-core/kc/db"
+	kcoption "github.com/alx696/polong-core/kc/option"
+	kc_remote_control "github.com/alx696/polong-core/kc/remote_control"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -217,4 +218,20 @@ func GetChatMessageUnReadCount() (string, error) {
 // SetChatMessageReadByPeerID 通过节点ID设置会话消息已读
 func SetChatMessageReadByPeerID(peerID string) {
 	kcdb.ChatMessageInfoUpdateRead(peerID, true)
+}
+
+// RequestRemoteControl 发起远程控制
+func RequestRemoteControl(peerID string) error {
+	return requestRemoteControl(peerID)
+}
+
+// AllowRemoteControl 允许远程控制(info为空字符时拒绝，否则为允许)
+func AllowRemoteControl(info string) {
+	kc_remote_control.InfoJson = &info
+	kc_remote_control.DataChan = make(chan []byte)
+}
+
+// SendRemoteControlVideoData 发送远程控制数据
+func SendRemoteControlVideoData(data []byte) {
+	kc_remote_control.DataChan <- data
 }

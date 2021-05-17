@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alx696/go-kc/kc"
-	"github.com/alx696/go-kc/qc"
+	"github.com/alx696/polong-core/kc"
+	"github.com/alx696/polong-core/qc"
 	"github.com/gorilla/websocket"
 )
 
@@ -440,4 +440,16 @@ func (impl FeedCallbackImpl) FeedCallbackOnChatMessageState(peerID string, messa
 	if e != nil {
 		log.Println("WebSocket出错", e)
 	}
+}
+
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoInfo(json string) {
+	log.Println("收到远程控制视频信息", json)
+}
+
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoData(data []byte) {
+	log.Println("收到远程控制视频数据", len(data))
+}
+
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlRequest(peerID string) {
+	log.Println("收到远程控制请求", peerID)
 }

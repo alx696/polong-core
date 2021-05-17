@@ -12,9 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	kccontact "github.com/alx696/go-kc/kc/contact"
-	kcdb "github.com/alx696/go-kc/kc/db"
-	kcoption "github.com/alx696/go-kc/kc/option"
+	kccontact "github.com/alx696/polong-core/kc/contact"
+	kcdb "github.com/alx696/polong-core/kc/db"
+	kcoption "github.com/alx696/polong-core/kc/option"
+	kc_remote_control "github.com/alx696/polong-core/kc/remote_control"
 	"github.com/libp2p/go-libp2p"
 	autonat "github.com/libp2p/go-libp2p-autonat"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
@@ -35,6 +36,8 @@ const (
 	protocolIDMessageText = "/lilu.red/kc/1/message/text"
 	// 文件消息的协议ID
 	protocolIDMessageFile = "/lilu.red/kc/1/message/file"
+	// 远程控制的协议ID
+	protocolIDRemoteControl = "/lilu.red/kc/1/remote_control"
 	// mDNS服务标记
 	mDNSServiceTag = "/lilu.red/kc/mdns"
 	// 连接保护标记:保持,权重100.
@@ -53,6 +56,12 @@ type FeedCallback interface {
 	FeedCallbackOnChatMessage(peerID string, chatMessage string)
 	// 会话消息状态
 	FeedCallbackOnChatMessageState(peerID string, messageID int64, state string)
+	// 远程控制收到视频信息
+	FeedCallbackOnRemoteControlReceiveVideoInfo(json string)
+	// 远程控制收到视频数据
+	FeedCallbackOnRemoteControlReceiveVideoData(data []byte)
+	// 远程控制收到请求
+	FeedCallbackOnRemoteControlRequest(peerID string)
 }
 
 // State 状态
@@ -103,6 +112,103 @@ func printDebugInfo() {
 
 		time.Sleep(time.Second * 10)
 	}
+}
+
+// 处理远程控制
+func remoteControlStreamHandler(s network.Stream) {
+	remotePeerID := s.Conn().RemotePeer()
+	log.Println("发起远程控制节点:", remotePeerID)
+	defer s.Close()
+
+	// 创建读写器
+	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+
+	// 检查拒绝名单
+	if valueInArray(remotePeerID.Pretty(), kcoption.Get().BlacklistIDArray) {
+		log.Println("节点已在黑名单中:", remotePeerID)
+		resultBytes := []byte("拒绝")
+		writeTextToReadWriter(rw, &resultBytes)
+		return
+	}
+
+	// 等待确认
+	feedCallback.FeedCallbackOnRemoteControlRequest(remotePeerID.Pretty())
+	for kc_remote_control.InfoJson == nil {
+		time.Sleep(time.Millisecond * 500)
+	}
+	info := *kc_remote_control.InfoJson
+	if info == "" {
+		log.Println("用户拒绝远程控制:", remotePeerID)
+		resultBytes := []byte("拒绝")
+		writeTextToReadWriter(rw, &resultBytes)
+		return
+	}
+
+	// 发送视频信息（宽度，高度）
+	resultBytes := []byte(info)
+	writeTextToReadWriter(rw, &resultBytes)
+
+	// 发送视频数据
+	for data := range kc_remote_control.DataChan {
+		_, e = rw.Write(data)
+		if e != nil {
+			log.Println("远程控制发送数据失败")
+			kc_remote_control.InfoJson = nil
+			return
+		}
+	}
+}
+
+// 发起远程控制
+func requestRemoteControl(id string) error {
+	s, e := createStream(id, protocolIDRemoteControl)
+	if e != nil {
+		return e
+	}
+	defer s.Close()
+
+	// 创建读写器
+	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
+
+	// 写入
+	data := []byte("请求")
+	e = writeTextToReadWriter(rw, &data)
+	if e != nil {
+		return e
+	}
+
+	// 接收对方意见
+	resultBytes, e := readTextFromReadWriter(rw)
+	if e != nil {
+		return e
+	}
+	result := string(*resultBytes)
+
+	// 检查异常意见
+	if result == "拒绝" {
+		return fmt.Errorf("拒绝")
+	}
+
+	// 接收视频信息（宽度，高度）
+	feedCallback.FeedCallbackOnRemoteControlReceiveVideoInfo(result)
+
+	// 接收视频数据（首条数据必须是CSD）
+	buf := make([]byte, 1048576)
+	for {
+		dataLength, e := rw.Read(buf)
+		if e != nil {
+			if e == io.EOF {
+				log.Println("远程控制-接收视频数据：读取时没有更多数据")
+			} else {
+				log.Println("远程控制-接收视频数据出错", e)
+				return nil
+			}
+		}
+
+		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(buf[0:dataLength])
+	}
+
+	return nil
 }
 
 // 处理文件消息

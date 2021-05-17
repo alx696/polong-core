@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/alx696/go-kc/qc"
+	"github.com/alx696/polong-core/qc"
 )
 
 func TestEncode(t *testing.T) {
