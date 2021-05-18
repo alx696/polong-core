@@ -228,10 +228,10 @@ func RequestRemoteControl(peerID string) error {
 // AllowRemoteControl 允许远程控制(info为空字符时拒绝，否则为允许)
 func AllowRemoteControl(info string) {
 	kc_remote_control.InfoJson = &info
-	kc_remote_control.DataChan = make(chan []byte)
+	kc_remote_control.DataChan = make(chan kc_remote_control.VideoInfo)
 }
 
 // SendRemoteControlVideoData 发送远程控制数据
-func SendRemoteControlVideoData(data []byte) {
-	kc_remote_control.DataChan <- data
+func SendRemoteControlVideoData(presentationTimeUs string, data []byte) {
+	kc_remote_control.DataChan <- kc_remote_control.VideoInfo{PresentationTimeUs: presentationTimeUs, Data: data}
 }

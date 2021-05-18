@@ -59,7 +59,7 @@ type FeedCallback interface {
 	// 远程控制收到视频信息
 	FeedCallbackOnRemoteControlReceiveVideoInfo(json string)
 	// 远程控制收到视频数据
-	FeedCallbackOnRemoteControlReceiveVideoData(data []byte)
+	FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs string, data []byte)
 	// 远程控制收到请求
 	FeedCallbackOnRemoteControlRequest(peerID string)
 }
@@ -150,9 +150,17 @@ func remoteControlStreamHandler(s network.Stream) {
 
 	// 发送视频数据
 	for data := range kc_remote_control.DataChan {
-		_, e = rw.Write(data)
+		presentationTimeUsBytes := []byte(data.PresentationTimeUs)
+		e = writeTextToReadWriter(rw, &presentationTimeUsBytes)
 		if e != nil {
-			log.Println("远程控制发送数据失败")
+			log.Println("远程控制发送视频时序失败")
+			kc_remote_control.InfoJson = nil
+			return
+		}
+
+		_, e = rw.Write(data.Data)
+		if e != nil {
+			log.Println("远程控制发送视频数据失败")
 			kc_remote_control.InfoJson = nil
 			return
 		}
@@ -195,17 +203,23 @@ func requestRemoteControl(id string) error {
 	// 接收视频数据（首条数据必须是CSD）
 	buf := make([]byte, 1048576)
 	for {
+		videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
+		if e != nil {
+			return e
+		}
+		videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
+
 		dataLength, e := rw.Read(buf)
 		if e != nil {
 			if e == io.EOF {
 				log.Println("远程控制-接收视频数据：读取时没有更多数据")
 			} else {
 				log.Println("远程控制-接收视频数据出错", e)
-				return nil
+				return e
 			}
 		}
 
-		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(buf[0:dataLength])
+		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(videoPresentationTimeUs, buf[0:dataLength])
 	}
 
 	return nil
@@ -714,6 +728,7 @@ func Start(safeDir, fileDir string, port int, callback FeedCallback) error {
 	h.SetStreamHandler(protocolIDInfo, infoStreamHandler)
 	h.SetStreamHandler(protocolIDMessageText, messageTextStreamHandler)
 	h.SetStreamHandler(protocolIDMessageFile, messageFileStreamHandler)
+	h.SetStreamHandler(protocolIDRemoteControl, remoteControlStreamHandler)
 
 	// 创建自动NAT
 	_, e = autonat.New(ctx, h)
