@@ -178,26 +178,26 @@ func requestRemoteControl(id string) error {
 	// 创建读写器
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
-	// 写入
-	data := []byte("请求")
-	e = writeTextToReadWriter(rw, &data)
-	if e != nil {
-		return e
-	}
+	// // 写入
+	// data := []byte("请求")
+	// e = writeTextToReadWriter(rw, &data)
+	// if e != nil {
+	// 	return e
+	// }
 
-	// 接收对方意见
+	// 接收首个回复
 	resultBytes, e := readTextFromReadWriter(rw)
 	if e != nil {
 		return e
 	}
 	result := string(*resultBytes)
 
-	// 检查异常意见
+	// 检查首个回复
 	if result == "拒绝" {
 		return fmt.Errorf("拒绝")
 	}
 
-	// 接收视频信息（宽度，高度）
+	// 反馈视频信息（宽度，高度）
 	feedCallback.FeedCallbackOnRemoteControlReceiveVideoInfo(result)
 
 	// 接收视频数据（首条数据必须是CSD）
