@@ -157,14 +157,17 @@ func remoteControlStreamHandler(s network.Stream) {
 			kc_remote_control.InfoJson = nil
 			return
 		}
+		// log.Println("远程控制发送视频时序", data.PresentationTimeUs)
 
-		_, e = rw.Write(data.Data)
+		e = writeDataToReadWriter(rw, &data.Data)
 		if e != nil {
 			log.Println("远程控制发送视频数据失败")
 			kc_remote_control.InfoJson = nil
 			return
 		}
+		// log.Println("远程控制发送视频数据", len(data.Data))
 	}
+	log.Println("远程控制发送结束")
 }
 
 // 发起远程控制
@@ -201,25 +204,21 @@ func requestRemoteControl(id string) error {
 	feedCallback.FeedCallbackOnRemoteControlReceiveVideoInfo(result)
 
 	// 接收视频数据（首条数据必须是CSD）
-	buf := make([]byte, 1048576)
 	for {
 		videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
 		if e != nil {
-			return e
+			return fmt.Errorf("读取视频时序出错: %w", e)
 		}
 		videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
+		log.Println("读取视频时序", videoPresentationTimeUs)
 
-		dataLength, e := rw.Read(buf)
+		videoData, e := readDataFromReadWriter(rw)
 		if e != nil {
-			if e == io.EOF {
-				log.Println("远程控制-接收视频数据：读取时没有更多数据")
-			} else {
-				log.Println("远程控制-接收视频数据出错", e)
-				return e
-			}
+			return fmt.Errorf("读取视频数据出错: %w", e)
 		}
+		log.Println("读取视频数据", len(*videoData))
 
-		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(videoPresentationTimeUs, buf[0:dataLength])
+		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(videoPresentationTimeUs, *videoData)
 	}
 
 	return nil

@@ -138,3 +138,20 @@ func TestDNSGet(t *testing.T) {
 	}
 	log.Println(string(bodyBytes), resp.StatusCode)
 }
+
+func TestByte(t *testing.T) {
+	txt := "10"
+	txtBytes := []byte(txt)
+	log.Println("时序字节长度", len(txtBytes))
+
+	timeBytes := make([]byte, 32)
+
+	for i := 0; i < len(timeBytes); i++ {
+		if i < len(txtBytes) {
+			timeBytes[i] = txtBytes[i]
+		}
+	}
+
+	log.Println("给出字节长度", len(timeBytes))
+	log.Println("给出字节长度", string(timeBytes))
+}

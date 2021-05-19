@@ -205,3 +205,34 @@ func writeTextToReadWriter(rw *bufio.ReadWriter, data *[]byte) error {
 	}
 	return nil
 }
+
+// 从读写器中读取数据
+func readDataFromReadWriter(rw *bufio.ReadWriter) (*[]byte, error) {
+	//读取
+	data, e := rw.ReadBytes('\n')
+	if e != nil {
+		return nil, e
+	}
+
+	//移除delim
+	finalData := data[0 : len(data)-1]
+
+	return &finalData, nil
+}
+
+// 往读写器中写入数据
+func writeDataToReadWriter(rw *bufio.ReadWriter, data *[]byte) error {
+	//添加delim
+	finalData := append(*data, '\n')
+
+	//写入
+	_, e = rw.Write(finalData)
+	if e != nil {
+		return e
+	}
+	e = rw.Flush()
+	if e != nil {
+		return e
+	}
+	return nil
+}
