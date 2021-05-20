@@ -2,12 +2,14 @@ package kc
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -221,16 +223,13 @@ func writeTextToReadWriter(rw *bufio.ReadWriter, data *[]byte) error {
 
 // 从读写器中读取数据
 func readDataFromReadWriter(rw *bufio.ReadWriter) (*[]byte, error) {
-	//读取
-	data, e := rw.ReadBytes('\n')
-	if e != nil {
-		return nil, e
+	var data []byte
+	scanner := bufio.NewScanner(rw.Reader)
+	for scanner.Scan() {
+		data = append(data, scanner.Bytes()...)
 	}
 
-	//移除delim
-	finalData := data[0 : len(data)-1]
-
-	return &finalData, nil
+	return &data, nil
 }
 
 // 往读写器中写入数据
@@ -248,4 +247,47 @@ func writeDataToReadWriter(rw *bufio.ReadWriter, data *[]byte) error {
 		return e
 	}
 	return nil
+}
+
+// 构建视频元信息
+func toVideoMetadata(presentationTimeUs, size int64) []byte {
+	timeRealBytes := []byte(strconv.FormatInt(presentationTimeUs, 10))
+	timeBytes := make([]byte, 64)
+	for i := 0; i < len(timeBytes); i++ {
+		if i < len(timeRealBytes) {
+			timeBytes[i] = timeRealBytes[i]
+		}
+	}
+
+	sizeRealBytes := []byte(strconv.FormatInt(size, 10))
+	sizeBytes := make([]byte, 64)
+	for i := 0; i < len(sizeBytes); i++ {
+		if i < len(sizeRealBytes) {
+			sizeBytes[i] = sizeRealBytes[i]
+		}
+	}
+
+	var packageData []byte
+	packageData = append(packageData, timeBytes...)
+	packageData = append(packageData, sizeBytes...)
+
+	return packageData
+}
+
+// 解析视频元信息
+func fromVideoMetadata(metadataData []byte) (int64, int64, error) {
+	presentationTimeUsText := string(bytes.TrimRight(metadataData[0:64], string(0)))
+	sizeText := string(bytes.TrimRight(metadataData[64:128], string(0)))
+
+	presentationTimeUs, e := strconv.ParseInt(presentationTimeUsText, 10, 64)
+	if e != nil {
+		return 0, 0, e
+	}
+
+	size, e := strconv.ParseInt(sizeText, 10, 64)
+	if e != nil {
+		return 0, 0, e
+	}
+
+	return presentationTimeUs, size, nil
 }

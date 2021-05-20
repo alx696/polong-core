@@ -446,7 +446,7 @@ func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoInfo(json st
 	log.Println("收到远程控制视频信息", json)
 }
 
-func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs string, data []byte) {
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs int64, data []byte) {
 	log.Println("收到远程控制视频数据", len(data))
 }
 

@@ -4,7 +4,7 @@ package remote_control
 var InfoJson *string
 
 type VideoInfo struct {
-	PresentationTimeUs string  `json:"presentation_time_us"`
+	PresentationTimeUs int64  `json:"presentation_time_us"`
 	Data               []byte `json:"data"`
 }
 

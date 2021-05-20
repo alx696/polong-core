@@ -59,7 +59,7 @@ type FeedCallback interface {
 	// 远程控制收到视频信息
 	FeedCallbackOnRemoteControlReceiveVideoInfo(json string)
 	// 远程控制收到视频数据
-	FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs string, data []byte)
+	FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs int64, data []byte)
 	// 远程控制收到请求
 	FeedCallbackOnRemoteControlRequest(peerID string)
 }
@@ -150,22 +150,36 @@ func remoteControlStreamHandler(s network.Stream) {
 
 	// 发送视频数据
 	for data := range kc_remote_control.DataChan {
-		presentationTimeUsBytes := []byte(data.PresentationTimeUs)
-		e = writeTextToReadWriter(rw, &presentationTimeUsBytes)
-		if e != nil {
-			log.Println("远程控制发送视频时序失败")
-			kc_remote_control.InfoJson = nil
-			return
-		}
-		log.Println("远程控制发送视频时序", data.PresentationTimeUs)
+		// presentationTimeUsBytes := []byte(data.PresentationTimeUs)
+		// e = writeTextToReadWriter(rw, &presentationTimeUsBytes)
+		// if e != nil {
+		// 	log.Println("远程控制发送视频时序失败")
+		// 	kc_remote_control.InfoJson = nil
+		// 	return
+		// }
+		// log.Println("远程控制发送视频时序", data.PresentationTimeUs)
 
-		e = writeDataToReadWriter(rw, &data.Data)
+		// e = writeDataToReadWriter(rw, &data.Data)
+		// if e != nil {
+		// 	log.Println("远程控制发送视频数据失败")
+		// 	kc_remote_control.InfoJson = nil
+		// 	return
+		// }
+		// log.Println("远程控制发送视频数据", len(data.Data))
+
+		videoMetadata := toVideoMetadata(data.PresentationTimeUs, int64(len(data.Data)))
+		var videoData []byte
+		videoData = append(videoData, videoMetadata...)
+		videoData = append(videoData, data.Data...)
+
+		wn, e := rw.Write(videoData)
 		if e != nil {
-			log.Println("远程控制发送视频数据失败")
-			kc_remote_control.InfoJson = nil
+			log.Println("远程控制发送视频数据失败", e)
 			return
 		}
-		log.Println("远程控制发送视频数据", len(data.Data))
+
+		rw.Flush()
+		log.Println("远程控制发送视频数据", data.PresentationTimeUs, len(data.Data), len(videoData), wn)
 	}
 	log.Println("远程控制发送结束")
 }
@@ -180,13 +194,6 @@ func requestRemoteControl(id string) error {
 
 	// 创建读写器
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
-
-	// // 写入
-	// data := []byte("请求")
-	// e = writeTextToReadWriter(rw, &data)
-	// if e != nil {
-	// 	return e
-	// }
 
 	// 接收首个回复
 	resultBytes, e := readTextFromReadWriter(rw)
@@ -205,21 +212,52 @@ func requestRemoteControl(id string) error {
 
 	// 接收视频数据（首条数据必须是CSD）
 	for {
-		videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
-		if e != nil {
-			return fmt.Errorf("读取视频时序出错: %w", e)
-		}
-		videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
-		log.Println("读取视频时序", videoPresentationTimeUs)
+		// videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
+		// if e != nil {
+		// 	return fmt.Errorf("读取视频时序出错: %w", e)
+		// }
+		// videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
+		// log.Println("读取视频时序", videoPresentationTimeUs)
 
-		videoData, e := readDataFromReadWriter(rw)
-		if e != nil {
-			return fmt.Errorf("读取视频数据出错: %w", e)
-		}
-		log.Println("读取视频数据", len(*videoData))
+		// videoData, e := readDataFromReadWriter(rw)
+		// if e != nil {
+		// 	return fmt.Errorf("读取视频数据出错: %w", e)
+		// }
+		// log.Println("读取视频数据", len(*videoData))
 
-		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(videoPresentationTimeUs, *videoData)
+		metadataData := make([]byte, 128)
+		rn, e := rw.Read(metadataData)
+		if e != nil {
+			if e == io.EOF {
+				log.Println("接收视频数据：没有更多数据")
+				return nil
+			} else {
+				return e
+			}
+		}
+		if rn != len(metadataData) {
+			return fmt.Errorf("can not read video metadata!")
+		}
+
+		presentationTimeUs, size, e := fromVideoMetadata(metadataData)
+		if e != nil {
+			return fmt.Errorf("FromVideoMetadata error: %w", e)
+		}
+
+		var videoData []byte
+		videoDataBuffer := make([]byte, size)
+		for int64(len(videoData)) < size {
+			rn, e := rw.Read(videoDataBuffer)
+			if e != nil {
+				return fmt.Errorf("videoData not full: %w", e)
+			}
+			videoData = append(videoData, videoDataBuffer[:rn]...)
+		}
+
+		log.Println("读取视频数据", presentationTimeUs, len(videoData))
+		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs, videoData)
 	}
+	log.Println("远程控制jieshou结束")
 
 	return nil
 }

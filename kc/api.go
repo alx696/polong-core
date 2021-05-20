@@ -232,6 +232,6 @@ func AllowRemoteControl(info string) {
 }
 
 // SendRemoteControlVideoData 发送远程控制数据
-func SendRemoteControlVideoData(presentationTimeUs string, data []byte) {
+func SendRemoteControlVideoData(presentationTimeUs int64, data []byte) {
 	kc_remote_control.DataChan <- kc_remote_control.VideoInfo{PresentationTimeUs: presentationTimeUs, Data: data}
 }
