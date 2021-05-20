@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -169,16 +170,28 @@ func createStream(id string, protocolID protocol.ID) (network.Stream, error) {
 // 从读写器中获取文本
 func readTextFromReadWriter(rw *bufio.ReadWriter) (*[]byte, error) {
 	//读取
-	encodeData, e := rw.ReadBytes('\n')
+	txt, e := rw.ReadString('\n')
 	if e != nil {
 		return nil, e
 	}
-
 	//移除delim
-	encodeData = encodeData[0 : len(encodeData)-1]
+	txt = strings.TrimSuffix(txt, "\n")
+
+	if txt == "" {
+		var empty []byte
+		return &empty, nil
+	}
+
+	// //读取
+	// encodeData, e := rw.ReadBytes('\n')
+	// if e != nil {
+	// 	return nil, e
+	// }
+	// //移除delim
+	// encodeData = encodeData[0 : len(encodeData)-1]
 
 	//解码
-	data, e := base64.StdEncoding.DecodeString(string(encodeData))
+	data, e := base64.StdEncoding.DecodeString(txt)
 	if e != nil {
 		return nil, e
 	}

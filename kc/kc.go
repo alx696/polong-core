@@ -157,7 +157,7 @@ func remoteControlStreamHandler(s network.Stream) {
 			kc_remote_control.InfoJson = nil
 			return
 		}
-		// log.Println("远程控制发送视频时序", data.PresentationTimeUs)
+		log.Println("远程控制发送视频时序", data.PresentationTimeUs)
 
 		e = writeDataToReadWriter(rw, &data.Data)
 		if e != nil {
@@ -165,7 +165,7 @@ func remoteControlStreamHandler(s network.Stream) {
 			kc_remote_control.InfoJson = nil
 			return
 		}
-		// log.Println("远程控制发送视频数据", len(data.Data))
+		log.Println("远程控制发送视频数据", len(data.Data))
 	}
 	log.Println("远程控制发送结束")
 }
