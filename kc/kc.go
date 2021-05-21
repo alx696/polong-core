@@ -181,6 +181,7 @@ func remoteControlStreamHandler(s network.Stream) {
 		rw.Flush()
 		log.Println("远程控制发送视频数据", data.PresentationTimeUs, len(data.Data), len(videoData), wn)
 	}
+
 	log.Println("远程控制发送结束")
 }
 
@@ -211,7 +212,7 @@ func requestRemoteControl(id string) error {
 	feedCallback.FeedCallbackOnRemoteControlReceiveVideoInfo(result)
 
 	// 接收视频数据（首条数据必须是CSD）
-	for {
+	for !kc_remote_control.IsStop {
 		// videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
 		// if e != nil {
 		// 	return fmt.Errorf("读取视频时序出错: %w", e)
@@ -257,8 +258,8 @@ func requestRemoteControl(id string) error {
 		log.Println("读取视频数据", presentationTimeUs, len(videoData))
 		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs, videoData)
 	}
-	log.Println("远程控制jieshou结束")
 
+	log.Println("停止接收视频数据")
 	return nil
 }
 
