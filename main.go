@@ -442,14 +442,18 @@ func (impl FeedCallbackImpl) FeedCallbackOnChatMessageState(peerID string, messa
 	}
 }
 
-func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoInfo(json string) {
-	log.Println("收到远程控制视频信息", json)
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlRequest(peerID string) {
+	//
 }
 
-func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs int64, data []byte) {
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlResponse(info string) {
+	//
+}
+
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlVideo(presentationTimeUs int64, data []byte) {
 	log.Println("收到远程控制视频数据", len(data))
 }
 
-func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlRequest(peerID string) {
-	log.Println("收到远程控制请求", peerID)
+func (impl FeedCallbackImpl) FeedCallbackOnRemoteControlClose() {
+	//
 }

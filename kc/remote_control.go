@@ -131,14 +131,14 @@ func remoteControlVideoStreamHandler(s network.Stream) {
 		}
 	}
 	if rn != len(metadataData) {
-		log.Printf("远程控制读取视频元数据失败: 需要128位，实际读取%d", rn)
+		log.Println("远程控制读取视频元数据失败: 需要128位，实际读取", rn)
 		return
 	}
 
 	// 解析元数据
 	presentationTimeUs, size, e := fromVideoMetadata(metadataData)
 	if e != nil {
-		log.Printf("远程控制解析视频元数据失败: %w", e)
+		log.Println("远程控制解析视频元数据失败: ", e)
 		return
 	}
 
@@ -148,7 +148,7 @@ func remoteControlVideoStreamHandler(s network.Stream) {
 	for int64(len(videoData)) < size {
 		rn, e := rw.Read(videoDataBuffer)
 		if e != nil {
-			log.Printf("远程控制读取视频数据失败: %w", e)
+			log.Println("远程控制读取视频数据失败: ", e)
 			return
 		}
 		videoData = append(videoData, videoDataBuffer[:rn]...)
