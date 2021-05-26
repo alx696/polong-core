@@ -16,5 +16,6 @@ require (
 	github.com/makiuchi-d/gozxing v0.0.0-20210519161414-790c973e6edd
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/multiformats/go-multiaddr v0.3.1
+	golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08 // indirect
 	golang.org/x/tools v0.1.1 // indirect
 )

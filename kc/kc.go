@@ -15,7 +15,6 @@ import (
 	kccontact "github.com/alx696/polong-core/kc/contact"
 	kcdb "github.com/alx696/polong-core/kc/db"
 	kcoption "github.com/alx696/polong-core/kc/option"
-	kc_remote_control "github.com/alx696/polong-core/kc/remote_control"
 	"github.com/libp2p/go-libp2p"
 	autonat "github.com/libp2p/go-libp2p-autonat"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
@@ -30,14 +29,16 @@ import (
 )
 
 const (
-	// 信息交换协议ID
+	// 协议ID：信息交换
 	protocolIDInfo = "/lilu.red/kc/1/info"
-	// 文本消息的协议ID
+	// 协议ID：文本消息
 	protocolIDMessageText = "/lilu.red/kc/1/message/text"
-	// 文件消息的协议ID
+	// 协议ID：文件消息
 	protocolIDMessageFile = "/lilu.red/kc/1/message/file"
-	// 远程控制的协议ID
-	protocolIDRemoteControl = "/lilu.red/kc/1/remote_control"
+	// 协议ID：远程控制消息
+	protocolIDRemoteControlMessage = "/github.com/alx696/polong/remote_control/message"
+	// 协议ID：远程控制视频
+	protocolIDRemoteControlVideo = "/github.com/alx696/polong/remote_control/video"
 	// mDNS服务标记
 	mDNSServiceTag = "/lilu.red/kc/mdns"
 	// 连接保护标记:保持,权重100.
@@ -50,18 +51,23 @@ type FeedCallback interface {
 	FeedCallbackOnContactUpdate(json string)
 	// 联系人删除
 	FeedCallbackOnContactDelete(id string)
+
 	// 节点连接状态变化
 	FeedCallbackOnPeerConnectState(id string, isConnect bool)
+
 	// 会话消息
 	FeedCallbackOnChatMessage(peerID string, chatMessage string)
 	// 会话消息状态
 	FeedCallbackOnChatMessageState(peerID string, messageID int64, state string)
-	// 远程控制收到视频信息
-	FeedCallbackOnRemoteControlReceiveVideoInfo(json string)
-	// 远程控制收到视频数据
-	FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs int64, data []byte)
+
 	// 远程控制收到请求
 	FeedCallbackOnRemoteControlRequest(peerID string)
+	// 远程控制收到响应
+	FeedCallbackOnRemoteControlResponse(info string)
+	// 远程控制收到视频
+	FeedCallbackOnRemoteControlVideo(presentationTimeUs int64, data []byte)
+	// 远程控制收到关闭
+	FeedCallbackOnRemoteControlClose()
 }
 
 // State 状态
@@ -89,7 +95,7 @@ var feedCallback FeedCallback    // 实时推送回调
 var ready bool                   // 节点是否就绪标记
 var stopChan = make(chan int, 1) //节点是否停止标记
 
-// 处理远程控制
+/* // 处理远程控制
 func remoteControlStreamHandler(s network.Stream) {
 	remotePeerID := s.Conn().RemotePeer()
 	log.Println("发起远程控制节点:", remotePeerID)
@@ -245,7 +251,7 @@ func requestRemoteControl(id string) error {
 			//-
 		}
 	}
-}
+} */
 
 // 处理文件消息
 func messageFileStreamHandler(s network.Stream) {
@@ -750,7 +756,8 @@ func Start(safeDir, fileDir string, port int, callback FeedCallback) error {
 	h.SetStreamHandler(protocolIDInfo, infoStreamHandler)
 	h.SetStreamHandler(protocolIDMessageText, messageTextStreamHandler)
 	h.SetStreamHandler(protocolIDMessageFile, messageFileStreamHandler)
-	h.SetStreamHandler(protocolIDRemoteControl, remoteControlStreamHandler)
+	h.SetStreamHandler(protocolIDRemoteControlMessage, remoteControlMessageStreamHandler)
+	h.SetStreamHandler(protocolIDRemoteControlVideo, remoteControlVideoStreamHandler)
 
 	// 创建自动NAT
 	_, e = autonat.New(ctx, h)

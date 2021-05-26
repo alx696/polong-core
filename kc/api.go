@@ -13,7 +13,6 @@ import (
 	kccontact "github.com/alx696/polong-core/kc/contact"
 	kcdb "github.com/alx696/polong-core/kc/db"
 	kcoption "github.com/alx696/polong-core/kc/option"
-	kc_remote_control "github.com/alx696/polong-core/kc/remote_control"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -220,23 +219,22 @@ func SetChatMessageReadByPeerID(peerID string) {
 	kcdb.ChatMessageInfoUpdateRead(peerID, true)
 }
 
-// RequestRemoteControl 发起远程控制
-func RequestRemoteControl(peerID string) error {
-	return requestRemoteControl(peerID)
+// 远程控制发出请求
+func RemoteControlSendRequest(peerID string) error {
+	return remoteControlMessageSend(peerID, RemoteControlMessageInfo{Type: "请求"})
 }
 
-// ResponseRemoteControl 响应远程控制(info为空字符时拒绝，否则为允许)
-func ResponseRemoteControl(info string) {
-	kc_remote_control.InfoJson = &info
-	kc_remote_control.DataChan = make(chan kc_remote_control.VideoData)
+// 远程控制发出响应(同意)
+func RemoteControlSendResponse(peerID, info string) error {
+	return remoteControlMessageSend(peerID, RemoteControlMessageInfo{Type: "响应", Text: info})
 }
 
-// CloseRemoteControl 关闭远程控制
-func CloseRemoteControl() {
-	kc_remote_control.QuitChan <- 1
+// 远程控制关闭
+func RemoteControlClose(peerID string) error {
+	return remoteControlMessageSend(peerID, RemoteControlMessageInfo{Type: "关闭"})
 }
 
-// SendRemoteControlVideoData 发送远程控制数据
-func SendRemoteControlVideoData(presentationTimeUs int64, data []byte) {
-	kc_remote_control.DataChan <- kc_remote_control.VideoData{PresentationTimeUs: presentationTimeUs, Data: data}
+// 远程控制发送视频
+func RemoteControlSendVideo(peerID string, presentationTimeUs int64, data []byte) error {
+	return remoteControlVideoSend(peerID, RemoteControlVideoInfo{PresentationTimeUs: presentationTimeUs, Data: data})
 }
