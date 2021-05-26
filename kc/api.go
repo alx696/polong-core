@@ -222,7 +222,6 @@ func SetChatMessageReadByPeerID(peerID string) {
 
 // RequestRemoteControl 发起远程控制
 func RequestRemoteControl(peerID string) error {
-	kc_remote_control.IsStop = false
 	return requestRemoteControl(peerID)
 }
 
@@ -234,8 +233,7 @@ func ResponseRemoteControl(info string) {
 
 // CloseRemoteControl 关闭远程控制
 func CloseRemoteControl() {
-	kc_remote_control.IsStop = true
-	close(kc_remote_control.DataChan)
+	kc_remote_control.QuitChan <- 1
 }
 
 // SendRemoteControlVideoData 发送远程控制数据

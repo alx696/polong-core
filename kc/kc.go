@@ -22,9 +22,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
+	routing "github.com/libp2p/go-libp2p-core/routing"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	libp2pquic "github.com/libp2p/go-libp2p-quic-transport"
-	routing "github.com/libp2p/go-libp2p-routing"
 	libp2ptls "github.com/libp2p/go-libp2p-tls"
 	"github.com/libp2p/go-libp2p/p2p/discovery"
 )
@@ -84,35 +84,10 @@ var ctx context.Context
 var ctxCancel context.CancelFunc
 var idht *dht.IpfsDHT
 var h host.Host
-var fileDirectory string      // 文件目录
-var feedCallback FeedCallback // 实时推送回调
-var ready bool                // 节点是否就绪标记
-var stop bool                 //节点是否停止标记
-
-// 打印调试信息
-func printDebugInfo() {
-	id := h.ID().Pretty()
-	log.Printf("ID: %s", id)
-
-	for {
-		if stop {
-			break
-		}
-
-		peerCount := h.Peerstore().Peers().Len()
-		connCount := len(h.Network().Conns())
-		log.Printf("节点数量: %d , 连接数量: %d", peerCount, connCount)
-
-		p2pMultiaddrs, e := peer.AddrInfoToP2pAddrs(&peer.AddrInfo{ID: h.ID(), Addrs: h.Addrs()})
-		if e != nil {
-			log.Println("地址信息转P2P多址出错:", e)
-		} else {
-			log.Println(p2pMultiaddrs)
-		}
-
-		time.Sleep(time.Second * 10)
-	}
-}
+var fileDirectory string         // 文件目录
+var feedCallback FeedCallback    // 实时推送回调
+var ready bool                   // 节点是否就绪标记
+var stopChan = make(chan int, 1) //节点是否停止标记
 
 // 处理远程控制
 func remoteControlStreamHandler(s network.Stream) {
@@ -149,40 +124,45 @@ func remoteControlStreamHandler(s network.Stream) {
 	writeTextToReadWriter(rw, &resultBytes)
 
 	// 发送视频数据
-	for data := range kc_remote_control.DataChan {
-		// presentationTimeUsBytes := []byte(data.PresentationTimeUs)
-		// e = writeTextToReadWriter(rw, &presentationTimeUsBytes)
-		// if e != nil {
-		// 	log.Println("远程控制发送视频时序失败")
-		// 	kc_remote_control.InfoJson = nil
-		// 	return
-		// }
-		// log.Println("远程控制发送视频时序", data.PresentationTimeUs)
+	for {
+		select {
+		case data := <-kc_remote_control.DataChan:
+			// presentationTimeUsBytes := []byte(data.PresentationTimeUs)
+			// e = writeTextToReadWriter(rw, &presentationTimeUsBytes)
+			// if e != nil {
+			// 	log.Println("远程控制发送视频时序失败")
+			// 	kc_remote_control.InfoJson = nil
+			// 	return
+			// }
+			// log.Println("远程控制发送视频时序", data.PresentationTimeUs)
 
-		// e = writeDataToReadWriter(rw, &data.Data)
-		// if e != nil {
-		// 	log.Println("远程控制发送视频数据失败")
-		// 	kc_remote_control.InfoJson = nil
-		// 	return
-		// }
-		// log.Println("远程控制发送视频数据", len(data.Data))
+			// e = writeDataToReadWriter(rw, &data.Data)
+			// if e != nil {
+			// 	log.Println("远程控制发送视频数据失败")
+			// 	kc_remote_control.InfoJson = nil
+			// 	return
+			// }
+			// log.Println("远程控制发送视频数据", len(data.Data))
 
-		videoMetadata := toVideoMetadata(data.PresentationTimeUs, int64(len(data.Data)))
-		var videoData []byte
-		videoData = append(videoData, videoMetadata...)
-		videoData = append(videoData, data.Data...)
+			videoMetadata := toVideoMetadata(data.PresentationTimeUs, int64(len(data.Data)))
+			var videoData []byte
+			videoData = append(videoData, videoMetadata...)
+			videoData = append(videoData, data.Data...)
 
-		wn, e := rw.Write(videoData)
-		if e != nil {
-			log.Println("远程控制发送视频数据失败", e)
+			_, e := rw.Write(videoData)
+			if e != nil {
+				log.Println("远程控制发送视频数据失败", e)
+				return
+			}
+
+			rw.Flush()
+			// log.Println("远程控制发送视频数据", data.PresentationTimeUs, len(data.Data), len(videoData), wn)
+			//-
+		case <-kc_remote_control.QuitChan:
+			log.Println("远程控制停止发送视频数据")
 			return
 		}
-
-		rw.Flush()
-		log.Println("远程控制发送视频数据", data.PresentationTimeUs, len(data.Data), len(videoData), wn)
 	}
-
-	log.Println("远程控制发送结束")
 }
 
 // 发起远程控制
@@ -212,55 +192,59 @@ func requestRemoteControl(id string) error {
 	feedCallback.FeedCallbackOnRemoteControlReceiveVideoInfo(result)
 
 	// 接收视频数据（首条数据必须是CSD）
-	for !kc_remote_control.IsStop {
-		// videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
-		// if e != nil {
-		// 	return fmt.Errorf("读取视频时序出错: %w", e)
-		// }
-		// videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
-		// log.Println("读取视频时序", videoPresentationTimeUs)
+	for {
+		select {
+		case <-kc_remote_control.QuitChan:
+			log.Println("远程控制停止接收视频数据")
+			return nil
+		default:
+			// videoPresentationTimeUsBytes, e := readTextFromReadWriter(rw)
+			// if e != nil {
+			// 	return fmt.Errorf("读取视频时序出错: %w", e)
+			// }
+			// videoPresentationTimeUs := string(*videoPresentationTimeUsBytes)
+			// log.Println("读取视频时序", videoPresentationTimeUs)
 
-		// videoData, e := readDataFromReadWriter(rw)
-		// if e != nil {
-		// 	return fmt.Errorf("读取视频数据出错: %w", e)
-		// }
-		// log.Println("读取视频数据", len(*videoData))
+			// videoData, e := readDataFromReadWriter(rw)
+			// if e != nil {
+			// 	return fmt.Errorf("读取视频数据出错: %w", e)
+			// }
+			// log.Println("读取视频数据", len(*videoData))
 
-		metadataData := make([]byte, 128)
-		rn, e := rw.Read(metadataData)
-		if e != nil {
-			if e == io.EOF {
-				log.Println("接收视频数据：没有更多数据")
-				return nil
-			} else {
-				return e
-			}
-		}
-		if rn != len(metadataData) {
-			return fmt.Errorf("can not read video metadata!")
-		}
-
-		presentationTimeUs, size, e := fromVideoMetadata(metadataData)
-		if e != nil {
-			return fmt.Errorf("FromVideoMetadata error: %w", e)
-		}
-
-		var videoData []byte
-		videoDataBuffer := make([]byte, size)
-		for int64(len(videoData)) < size {
-			rn, e := rw.Read(videoDataBuffer)
+			metadataData := make([]byte, 128)
+			rn, e := rw.Read(metadataData)
 			if e != nil {
-				return fmt.Errorf("videoData not full: %w", e)
+				if e == io.EOF {
+					log.Println("接收视频数据：没有更多数据")
+					return nil
+				} else {
+					return e
+				}
 			}
-			videoData = append(videoData, videoDataBuffer[:rn]...)
+			if rn != len(metadataData) {
+				return fmt.Errorf("远程控制读取视频元数据失败: 需要128位，实际读取%d", rn)
+			}
+
+			presentationTimeUs, size, e := fromVideoMetadata(metadataData)
+			if e != nil {
+				return fmt.Errorf("远程控制解析视频元数据失败: %w", e)
+			}
+
+			var videoData []byte
+			videoDataBuffer := make([]byte, size)
+			for int64(len(videoData)) < size {
+				rn, e := rw.Read(videoDataBuffer)
+				if e != nil {
+					return fmt.Errorf("远程控制读取视频数据失败: %w", e)
+				}
+				videoData = append(videoData, videoDataBuffer[:rn]...)
+			}
+
+			// log.Println("读取视频数据", presentationTimeUs, len(videoData))
+			feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs, videoData)
+			//-
 		}
-
-		log.Println("读取视频数据", presentationTimeUs, len(videoData))
-		feedCallback.FeedCallbackOnRemoteControlReceiveVideoData(presentationTimeUs, videoData)
 	}
-
-	log.Println("停止接收视频数据")
-	return nil
 }
 
 // 处理文件消息
@@ -793,8 +777,10 @@ func Start(safeDir, fileDir string, port int, callback FeedCallback) error {
 	mdn.PeerChan = make(chan peer.AddrInfo)
 	mdnsService.RegisterNotifee(mdn)
 	go func() {
-		for !stop {
+		for {
 			select {
+			case <-stopChan:
+				return
 			case addrInfo := <-mdn.PeerChan:
 				if valueInArray(addrInfo.ID.Pretty(), kcoption.Get().BlacklistIDArray) {
 					break
@@ -840,18 +826,16 @@ func Start(safeDir, fileDir string, port int, callback FeedCallback) error {
 	ready = true
 
 	// 保持运行
-	select {
-	case <-ctx.Done():
-		log.Println("节点停止")
-		return nil
-	}
+	<-ctx.Done()
+	log.Println("节点停止")
+	return nil
 }
 
 // Stop 停止
 func Stop() {
 	log.Println("停止")
 	ready = false
-	stop = true
+	stopChan <- 1
 
 	// 停止连接状态检查
 	connStateTickerStopChan <- true

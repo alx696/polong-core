@@ -11,5 +11,5 @@ type VideoData struct {
 // 视频数据信道
 var DataChan = make(chan VideoData)
 
-// 是否停止
-var IsStop bool
+// 停止信号信道
+var QuitChan = make(chan int, 1)

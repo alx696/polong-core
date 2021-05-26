@@ -276,8 +276,8 @@ func toVideoMetadata(presentationTimeUs, size int64) []byte {
 
 // 解析视频元信息
 func fromVideoMetadata(metadataData []byte) (int64, int64, error) {
-	presentationTimeUsText := string(bytes.TrimRight(metadataData[0:64], string(0)))
-	sizeText := string(bytes.TrimRight(metadataData[64:128], string(0)))
+	presentationTimeUsText := string(bytes.TrimRight(metadataData[0:64], string(rune(0))))
+	sizeText := string(bytes.TrimRight(metadataData[64:128], string(rune(0))))
 
 	presentationTimeUs, e := strconv.ParseInt(presentationTimeUsText, 10, 64)
 	if e != nil {

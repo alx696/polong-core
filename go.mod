@@ -11,12 +11,10 @@ require (
 	github.com/libp2p/go-libp2p-core v0.8.5
 	github.com/libp2p/go-libp2p-kad-dht v0.12.0
 	github.com/libp2p/go-libp2p-quic-transport v0.10.0
-	github.com/libp2p/go-libp2p-routing v0.1.0
 	github.com/libp2p/go-libp2p-swarm v0.5.0
 	github.com/libp2p/go-libp2p-tls v0.1.3
 	github.com/makiuchi-d/gozxing v0.0.0-20210519161414-790c973e6edd
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/multiformats/go-multiaddr v0.3.1
-	golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08 // indirect
 	golang.org/x/tools v0.1.1 // indirect
 )
