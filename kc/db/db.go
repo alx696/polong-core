@@ -18,7 +18,8 @@ type ChatMessageInfo struct {
 	FileSize                 int64  `json:"fileSize"`
 	FileNameWithoutExtension string `json:"fileNameWithoutExtension"`
 	FileExtension            string `json:"fileExtension"`
-	State                    string `json:"state"` // 发送/接收,进度,完成
+	FileDirectory            string `json:"fileDirectory"` // 空字符时用默认目录
+	State                    string `json:"state"`         // 发送/接收,进度,完成
 	Read                     bool   `json:"read"`
 }
 
@@ -52,6 +53,7 @@ func Open(path string) error {
 			"fileSize"	INTEGER,
 			"fileNameWithoutExtension"	TEXT,
 			"fileExtension"	TEXT,
+			"fileDirectory" TEXT,
 			"state"	TEXT NOT NULL,
 			"read" BOOL NOT NULL,
 			PRIMARY KEY("id")
@@ -71,8 +73,8 @@ func Close() {
 
 // ChatMessageInfoInsert 插入会话消息
 func ChatMessageInfoInsert(m *ChatMessageInfo) error {
-	_, e := db.Exec(fmt.Sprintf(`insert into chat_message values(%d, '%s', '%s', '%s', %d, '%s', '%s', '%s', %v)`,
-		m.ID, m.FromPeerID, m.ToPeerID, m.Text, m.FileSize, m.FileNameWithoutExtension, m.FileExtension, m.State, m.Read))
+	_, e := db.Exec(fmt.Sprintf(`insert into chat_message values(%d, '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', %v)`,
+		m.ID, m.FromPeerID, m.ToPeerID, m.Text, m.FileSize, m.FileNameWithoutExtension, m.FileExtension, m.FileDirectory, m.State, m.Read))
 	if e != nil {
 		return e
 	}
@@ -111,7 +113,9 @@ func ChatMessageInfoFind(peerID string) (*[]ChatMessageInfo, error) {
 	}
 	for rows.Next() {
 		var data ChatMessageInfo
-		e = rows.Scan(&data.ID, &data.FromPeerID, &data.ToPeerID, &data.Text, &data.FileSize, &data.FileNameWithoutExtension, &data.FileExtension, &data.State, &data.Read)
+		e = rows.Scan(&data.ID, &data.FromPeerID, &data.ToPeerID, &data.Text,
+			&data.FileSize, &data.FileNameWithoutExtension, &data.FileExtension, &data.FileDirectory,
+			&data.State, &data.Read)
 		if e != nil {
 			return nil, e
 		}

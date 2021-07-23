@@ -207,7 +207,7 @@ func messageFileStreamHandler(s network.Stream) {
 }
 
 // 发送文件消息
-func sendMessageFile(id string, fileInfo FileInfo, onProgress func(float64)) error {
+func sendMessageFile(id, directory string, fileInfo FileInfo, onProgress func(float64)) error {
 	s, e := createStream(id, protocolIDMessageFile)
 	if e != nil {
 		return e
@@ -235,7 +235,7 @@ func sendMessageFile(id string, fileInfo FileInfo, onProgress func(float64)) err
 	}
 
 	// 写入文件数据
-	f, e := os.Open(filepath.Join(fileDirectory, fmt.Sprint(fileInfo.NameWithoutExtension, ".", fileInfo.Extension)))
+	f, e := os.Open(filepath.Join(directory, fmt.Sprint(fileInfo.NameWithoutExtension, ".", fileInfo.Extension)))
 	if e != nil {
 		return e
 	}
@@ -378,7 +378,12 @@ func sendChatMessage(m *kcdb.ChatMessageInfo) {
 	if m.FileSize == 0 {
 		se = sendMessageText(m.ToPeerID, m.Text)
 	} else {
-		se = sendMessageFile(m.ToPeerID, FileInfo{Size: m.FileSize,
+		directory := fileDirectory
+		if m.FileDirectory != "" {
+			directory = m.FileDirectory
+		}
+
+		se = sendMessageFile(m.ToPeerID, directory, FileInfo{Size: m.FileSize,
 			NameWithoutExtension: m.FileNameWithoutExtension,
 			Extension:            m.FileExtension},
 			func(p float64) {

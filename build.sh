@@ -4,7 +4,7 @@ set -e
 NAME="polong-core"
 
 go mod download
-mkdir build
+mkdir -p build
 echo "Linux"
 go build -o "build/${NAME}-linux"
 echo "Windows"

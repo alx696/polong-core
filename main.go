@@ -273,6 +273,7 @@ func startHTTP(webPort int) {
 			text := request.FormValue("text")
 			nameWithoutExtension := request.FormValue("nameWithoutExtension")
 			extension := request.FormValue("extension")
+			directory := request.FormValue("directory")
 			size, _ := strconv.ParseInt(request.FormValue("size"), 10, 64)
 
 			if peerID == "" || (text == "" && size == 0) {
@@ -283,8 +284,7 @@ func startHTTP(webPort int) {
 			if text != "" {
 				kc.SendChatMessageText(peerID, text)
 			} else if size != 0 {
-
-				kc.SendChatMessageFile(peerID, nameWithoutExtension, extension, size)
+				kc.SendChatMessageFile(peerID, nameWithoutExtension, extension, directory, size)
 			}
 		} else if request.Method == "GET" {
 			peerID := request.URL.Query().Get("peerID")

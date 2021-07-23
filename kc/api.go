@@ -142,9 +142,10 @@ func SendChatMessageText(peerID, text string) {
 }
 
 // SendChatMessageFile 发送会话消息文件
-func SendChatMessageFile(peerID, nameWithoutExtension, extension string, size int64) {
+func SendChatMessageFile(peerID, nameWithoutExtension, extension, directory string, size int64) {
 	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: h.ID().Pretty(), ToPeerID: peerID,
-		FileSize: size, FileNameWithoutExtension: nameWithoutExtension, FileExtension: extension, State: "发送", Read: true}
+		FileSize: size, FileNameWithoutExtension: nameWithoutExtension, FileExtension: extension, FileDirectory: directory,
+		State: "发送", Read: true}
 
 	go sendChatMessage(&m)
 }
