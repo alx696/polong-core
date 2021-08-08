@@ -3,6 +3,7 @@ set -e
 
 NAME="polong-core"
 
+go mod tidy
 go mod download
 mkdir -p build
 echo "Linux"

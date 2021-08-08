@@ -4,11 +4,11 @@
 
 ## 开发
 
-[基于go-libp2p](https://github.com/libp2p/go-libp2p)，使用Golang语言开发，开发工具推荐使用[Visual Studio Code](https://code.visualstudio.com/)。
+[基于go-libp2p](https://github.com/libp2p/go-libp2p) ，使用Golang语言开发，开发工具推荐使用 [Visual Studio Code](https://code.visualstudio.com/) 。
 
 ### Android
 
-使用[mobile](https://pkg.go.dev/golang.org/x/mobile)生成AAR，项目文件夹中执行:
+使用 [mobile](https://pkg.go.dev/golang.org/x/mobile) 生成AAR，项目文件夹中执行:
 ```
 $ gomobile bind -target=android/arm64,android/arm -v -o /path/to/android/project/gomobile/polong-core.aar ./kc ./qc
 ```

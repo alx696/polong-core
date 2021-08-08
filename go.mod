@@ -17,4 +17,5 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/multiformats/go-multiaddr v0.3.3
 	golang.org/x/mobile v0.0.0-20210716004757-34ab1303b554 // indirect
+	golang.org/x/tools v0.1.2 // indirect
 )
