@@ -3,8 +3,8 @@ set -e
 
 NAME="polong-core"
 
-go mod tidy
 go mod download
+go mod tidy
 mkdir -p build
 echo "Linux"
 go build -o "build/${NAME}-linux"
