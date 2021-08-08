@@ -3,7 +3,6 @@ set -e
 
 NAME="polong-core"
 
-go mod init github.com/alx696/polong-core
 go mod tidy
 go mod download
 
