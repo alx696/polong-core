@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -142,9 +141,9 @@ func SendChatMessageText(peerID, text string) {
 }
 
 // SendChatMessageFile 发送会话消息文件
-func SendChatMessageFile(peerID, nameWithoutExtension, extension, directory string, size int64) {
+func SendChatMessageFile(peerID, filePath, fileName, fileExtension string, fileSize int64) {
 	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: h.ID().Pretty(), ToPeerID: peerID,
-		FileSize: size, FileNameWithoutExtension: nameWithoutExtension, FileExtension: extension, FileDirectory: directory,
+		FilePath: filePath, FileName: fileName, FileExtension: fileExtension, FileSize: fileSize,
 		State: "发送", Read: true}
 
 	go sendChatMessage(&m)
@@ -170,7 +169,7 @@ func DeleteChatMessageByPeerID(peerID string) {
 	array, _ := kcdb.ChatMessageInfoFind(peerID)
 	for _, v := range *array {
 		if v.FileSize > 0 {
-			os.Remove(filepath.Join(fileDirectory, fmt.Sprint(v.FileNameWithoutExtension, ".", v.FileExtension)))
+			os.Remove(v.FilePath)
 		}
 	}
 
@@ -186,7 +185,7 @@ func DeleteChatMessageByID(id int64) {
 	}
 
 	if m.FileSize > 0 {
-		os.Remove(filepath.Join(fileDirectory, fmt.Sprint(m.FileNameWithoutExtension, ".", m.FileExtension)))
+		os.Remove(m.FilePath)
 	}
 
 	kcdb.ChatMessageInfoDeleteByID(id)

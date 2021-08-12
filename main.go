@@ -9,10 +9,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -69,9 +71,8 @@ func main() {
 	// 启动http
 	go startHTTP(*webPortFlag)
 
-	// wait for a SIGINT or SIGTERM signal
 	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalChan, syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
 	log.Println("收到信号, 关闭程序")
 
@@ -221,16 +222,21 @@ func startHTTP(webPort int) {
 	// 文件(供无法直接访问文件系统的客户端使用)
 	http.HandleFunc("/api1/file", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method == "POST" {
-			nameWithoutExtension := request.FormValue("nameWithoutExtension")
-			extension := request.FormValue("extension")
+			name := request.FormValue("name")
+			if name == "" {
+				writer.WriteHeader(http.StatusBadRequest)
+				return
+			}
 
 			// 准备文件路径
-			filePath := filepath.Join(fileDirectory, fmt.Sprintf("%s.%s", nameWithoutExtension, extension))
+			filePath := filepath.Join(fileDirectory, name)
+			// 文件如果存在则重新命名
 			_, e := os.Stat(filePath)
 			if e == nil {
-				nameWithoutExtension = fmt.Sprintf("%s[%d]", nameWithoutExtension, time.Now().Nanosecond())
+				fileExt := filepath.Ext(name) // 后缀带点
+				fileName := strings.Replace(name, fileExt, "", 1)
+				filePath = filepath.Join(fileDirectory, fmt.Sprintf("%s[%d]%s", fileName, time.Now().Nanosecond(), fileExt))
 			}
-			filePath = filepath.Join(fileDirectory, fmt.Sprintf("%s.%s", nameWithoutExtension, extension))
 
 			multipartFile, _, e := request.FormFile("file")
 			if e != nil {
@@ -254,14 +260,21 @@ func startHTTP(webPort int) {
 				_, _ = writer.Write([]byte(e.Error()))
 				return
 			}
+			_, _ = writer.Write([]byte(filePath))
 		} else if request.Method == "GET" {
-			fileName := request.URL.Query().Get("fileName")
-			fileBytes, e := ioutil.ReadFile(filepath.Join(fileDirectory, fileName))
+			path := request.URL.Query().Get("path")
+			if path == "" {
+				writer.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			fileBytes, e := ioutil.ReadFile(path)
 			if e != nil {
 				log.Println("读取文件错误:", e)
 				writer.WriteHeader(http.StatusNotFound)
 				return
 			}
+			writer.Header().Set("Content-Disposition", fmt.Sprint("attachment;filename=", url.QueryEscape(filepath.Base(path))))
 			_, _ = writer.Write(fileBytes)
 		}
 	})
@@ -271,9 +284,9 @@ func startHTTP(webPort int) {
 		if request.Method == "POST" {
 			peerID := request.FormValue("peerID")
 			text := request.FormValue("text")
-			nameWithoutExtension := request.FormValue("nameWithoutExtension")
+			path := request.FormValue("path")
+			name := request.FormValue("name")
 			extension := request.FormValue("extension")
-			directory := request.FormValue("directory")
 			size, _ := strconv.ParseInt(request.FormValue("size"), 10, 64)
 
 			if peerID == "" || (text == "" && size == 0) {
@@ -284,7 +297,7 @@ func startHTTP(webPort int) {
 			if text != "" {
 				kc.SendChatMessageText(peerID, text)
 			} else if size != 0 {
-				kc.SendChatMessageFile(peerID, nameWithoutExtension, extension, directory, size)
+				kc.SendChatMessageFile(peerID, path, name, extension, size)
 			}
 		} else if request.Method == "GET" {
 			peerID := request.URL.Query().Get("peerID")

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	kccontact "github.com/alx696/polong-core/kc/contact"
@@ -78,11 +79,14 @@ type State struct {
 
 // FileInfo 文件信息
 type FileInfo struct {
-	Size int64 `json:"size"`
-	// 名字, 不含类型
-	NameWithoutExtension string `json:"nameWithoutExtension"`
-	// 类型, 不含"."" 例如"hi.txt"则为"txt"
+	// 路径
+	Path string `json:"path"`
+	// 名称
+	Name string `json:"name"`
+	// 类型, 不含"."" 例如"hi.txt"后缀是"txt"
 	Extension string `json:"extension"`
+	// 大小
+	Size int64 `json:"size"`
 }
 
 var e error
@@ -130,15 +134,18 @@ func messageFileStreamHandler(s network.Stream) {
 	log.Println("收到文件信息内容:", fileInfo)
 
 	// 准备文件路径
-	filePath := filepath.Join(fileDirectory, fmt.Sprintf("%s.%s", fileInfo.NameWithoutExtension, fileInfo.Extension))
+	fileName := fileInfo.Name
+	filePath := filepath.Join(fileDirectory, fileName)
+	// 文件如果存在则重新命名
 	_, e = os.Stat(filePath)
 	if e == nil {
-		fileInfo.NameWithoutExtension = fmt.Sprintf("%s[%d]", fileInfo.NameWithoutExtension, time.Now().Nanosecond())
+		fileExt := filepath.Ext(fileName) // 后缀带点
+		fileBaseName := strings.Replace(fileName, fileExt, "", 1)
+		filePath = filepath.Join(fileDirectory, fmt.Sprintf("%s[%d]%s", fileBaseName, time.Now().Nanosecond(), fileExt))
 	}
-	filePath = filepath.Join(fileDirectory, fmt.Sprintf("%s.%s", fileInfo.NameWithoutExtension, fileInfo.Extension))
 
 	// 保存消息
-	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: remotePeerID.Pretty(), ToPeerID: h.ID().Pretty(), Text: "", FileSize: fileInfo.Size, FileNameWithoutExtension: fileInfo.NameWithoutExtension, FileExtension: fileInfo.Extension, State: "接收", Read: false}
+	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: remotePeerID.Pretty(), ToPeerID: h.ID().Pretty(), Text: "", FileSize: fileInfo.Size, FileExtension: fileInfo.Extension, FilePath: filePath, State: "接收", Read: false}
 	e = kcdb.ChatMessageInfoInsert(&m)
 	if e != nil {
 		log.Println("保存消息时出错", e)
@@ -207,7 +214,7 @@ func messageFileStreamHandler(s network.Stream) {
 }
 
 // 发送文件消息
-func sendMessageFile(id, directory string, fileInfo FileInfo, onProgress func(float64)) error {
+func sendMessageFile(id string, fileInfo FileInfo, onProgress func(float64)) error {
 	s, e := createStream(id, protocolIDMessageFile)
 	if e != nil {
 		return e
@@ -235,7 +242,7 @@ func sendMessageFile(id, directory string, fileInfo FileInfo, onProgress func(fl
 	}
 
 	// 写入文件数据
-	f, e := os.Open(filepath.Join(directory, fmt.Sprint(fileInfo.NameWithoutExtension, ".", fileInfo.Extension)))
+	f, e := os.Open(fileInfo.Path)
 	if e != nil {
 		return e
 	}
@@ -378,18 +385,18 @@ func sendChatMessage(m *kcdb.ChatMessageInfo) {
 	if m.FileSize == 0 {
 		se = sendMessageText(m.ToPeerID, m.Text)
 	} else {
-		directory := fileDirectory
-		if m.FileDirectory != "" {
-			directory = m.FileDirectory
-		}
-
-		se = sendMessageFile(m.ToPeerID, directory, FileInfo{Size: m.FileSize,
-			NameWithoutExtension: m.FileNameWithoutExtension,
-			Extension:            m.FileExtension},
+		se = sendMessageFile(m.ToPeerID,
+			FileInfo{
+				Path:      m.FilePath,
+				Name:      m.FileName,
+				Extension: m.FileExtension,
+				Size:      m.FileSize,
+			},
 			func(p float64) {
 				// 订阅回调
 				feedCallback.FeedCallbackOnChatMessageState(m.FromPeerID, m.ID, fmt.Sprintf("发送 %.0f%s", p*100, "%"))
-			})
+			},
+		)
 	}
 
 	if se != nil {
