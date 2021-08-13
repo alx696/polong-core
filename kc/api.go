@@ -3,8 +3,6 @@ package kc
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -166,27 +164,27 @@ func FindChatMessage(peerID string) (string, error) {
 
 // DeleteChatMessageByPeerID 通过节点ID删除会话消息
 func DeleteChatMessageByPeerID(peerID string) {
-	array, _ := kcdb.ChatMessageInfoFind(peerID)
-	for _, v := range *array {
-		if v.FileSize > 0 {
-			os.Remove(v.FilePath)
-		}
-	}
+	//array, _ := kcdb.ChatMessageInfoFind(peerID)
+	//for _, v := range *array {
+	//	if v.FileSize > 0 {
+	//		os.Remove(v.FilePath)
+	//	}
+	//}
 
 	kcdb.ChatMessageInfoDeleteByPeerID(peerID)
 }
 
 // DeleteChatMessageByID 通过ID删除会话消息
 func DeleteChatMessageByID(id int64) {
-	m, e := kcdb.ChatMessageInfoGet(id)
-	if e != nil {
-		log.Println(e)
-		return
-	}
-
-	if m.FileSize > 0 {
-		os.Remove(m.FilePath)
-	}
+	//m, e := kcdb.ChatMessageInfoGet(id)
+	//if e != nil {
+	//	log.Println(e)
+	//	return
+	//}
+	//
+	//if m.FileSize > 0 {
+	//	os.Remove(m.FilePath)
+	//}
 
 	kcdb.ChatMessageInfoDeleteByID(id)
 }
