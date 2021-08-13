@@ -145,7 +145,7 @@ func messageFileStreamHandler(s network.Stream) {
 	}
 
 	// 保存消息
-	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: remotePeerID.Pretty(), ToPeerID: h.ID().Pretty(), Text: "", FileSize: fileInfo.Size, FileExtension: fileInfo.Extension, FilePath: filePath, State: "接收", Read: false}
+	m := kcdb.ChatMessageInfo{ID: time.Now().UnixNano(), FromPeerID: remotePeerID.Pretty(), ToPeerID: h.ID().Pretty(), Text: "", FilePath: filePath, FileName: fileName, FileExtension: fileInfo.Extension, FileSize: fileInfo.Size, State: "接收", Read: false}
 	e = kcdb.ChatMessageInfoInsert(&m)
 	if e != nil {
 		log.Println("保存消息时出错", e)
