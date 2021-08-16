@@ -28,6 +28,7 @@ jobs:
     - name: Build
       run: |
         sh build.sh
+        ls -l build/*
 
     - name: Upload
       env:
@@ -35,10 +36,11 @@ jobs:
       run: |
         sudo apt-get install -y jq
         GIT_TAG=`echo $GITHUB_REF | sed 's/refs\/tags\///'`
-        upload_url=`curl \
+        # get upload url
+        API_UPLOAD_URL=`curl \
         -X POST \
-        -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
+        -H "Authorization: token ${GITHUB_TOKEN}" \
         https://api.github.com/repos/${GITHUB_REPOSITORY}/releases \
         -d '{"tag_name":"'${GIT_TAG}'"}' \
         | jq --raw-output '.upload_url' \
@@ -46,21 +48,24 @@ jobs:
         # upload
         curl \
         -X POST \
-        -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
-        -F 'file=@build/polong-core-linux' \
-        ${upload_url}=polong-core-linux
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @'build/polong-core-linux' \
+        ${API_UPLOAD_URL}=polong-core-linux
         # upload
         curl \
         -X POST \
-        -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
-        -F 'file=@build/polong-core-windows' \
-        ${upload_url}=polong-core-windows
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @'build/polong-core-windows' \
+        ${API_UPLOAD_URL}=polong-core-windows
         # upload
         curl \
         -X POST \
-        -H "Authorization: token ${GITHUB_TOKEN}" \
         -H "Accept: application/vnd.github.v3+json" \
-        -F 'file=@build/polong-core.aar' \
-        ${upload_url}=polong-core.aar
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @'build/polong-core.aar' \
+        ${API_UPLOAD_URL}=polong-core.aar
