@@ -24,5 +24,7 @@ if [ -z "$(which gomobile)" ]; then
 else
   echo "已经安装gomobile"
 fi
+go get -d golang.org/x/mobile/cmd/gomobile
 gomobile bind -target=android/arm64,android/arm -o "build/${NAME}.aar" ./kc ./qc
 rm "build/${NAME}-sources.jar"
+go mod tidy
